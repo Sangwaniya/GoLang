@@ -1,0 +1,5 @@
+{"data":[
+    {"name":"Sangwan", "age": 23, "profession": "dev"},
+    {"name":"Nain", "age":22, "profession": "analyst"},
+    {"name":"Radhey", "age":22, "profession": "Product manager"}
+], "other unnuccessary information":{"college":"nit kkr", "school": "All have diff"}}
