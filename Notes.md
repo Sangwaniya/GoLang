@@ -1,4 +1,9 @@
 # Go Interview Preparation Notes
+#### [OOP Concepts in Golang]()
+#### [Reading Resources](#sources)
+#### [Unique features of Go](#go-unique-features)
+#### [Most Common Interview Topics](#most-common-interview-topics)
+---
 
 ## OOP Concepts in Golang
 Go is not a traditional Object-Oriented Programming (OOP) language, However, Go still supports some key OOP concepts, such as encapsulation and polymorphism, 
@@ -778,7 +783,6 @@ func main() {
 ---
 
 
-
 ## Important Packages to Know
 - **fmt**: For formatted I/O (Println, Scanf, etc.).
 - **errors**: For error creation and handling.
@@ -786,6 +790,9 @@ func main() {
 - **context**: For managing request-scoped values and cancellation signals.
 - **net/http**: For building HTTP servers and clients.
 ---
+
+## Sources:
+- go-concurrency: goroutines https://antonz.org/go-concurrency/goroutines/
 
 ## Most Common Interview Topics
 1. **Concurrency**: Understanding goroutines, channels, and synchronization is crucial.
