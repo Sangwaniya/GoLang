@@ -3,6 +3,7 @@
 #### [Reading Resources](#sources)
 #### [Unique features of Go](#go-unique-features)
 #### [Most Common Interview Topics](#most-common-interview-topics)
+#### [Some advanced Go concepts](#some-advanced-go-concepts)
 ---
 
 ## OOP Concepts in Golang
@@ -800,3 +801,298 @@ func main() {
 3. **Error Handling**: Idiomatic Go error handling using error values and the `errors` package.
 4. **Structs & Composition**: How Go achieves behavior extension and "inheritance" through composition.
 5. **Goroutine Management**: Proper goroutine usage, channel communication, and avoiding memory leaks.
+---
+
+## Some advanced Go concepts
+
+### 1. **Goroutine Leaks and Managing Concurrency**
+
+#### **Common Issues Leading to Goroutine Leaks**
+- **Unbuffered Channels**: If a goroutine is waiting on an unbuffered channel and no other goroutine is ready to consume the message, it will block indefinitely.
+- **Forgotten goroutines**: Goroutines that run in the background and are never terminated.
+
+#### **Preventing Goroutine Leaks**:
+- Use **`sync.WaitGroup`** to ensure that all spawned goroutines complete before exiting.
+- Properly handle channel closing, cancellation, and timeouts using the **`context`** package.
+
+**Example: Using `WaitGroup` to avoid goroutine leaks**
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+func worker(id int, wg *sync.WaitGroup) {
+	defer wg.Done() // Mark the goroutine as done when it exits
+	time.Sleep(time.Second)
+	fmt.Printf("Worker %d done\n", id)
+}
+
+func main() {
+	var wg sync.WaitGroup
+
+	for i := 1; i <= 5; i++ {
+		wg.Add(1) // Increment the waitgroup counter for each goroutine
+		go worker(i, &wg)
+	}
+
+	wg.Wait() // Block until all goroutines have finished
+	fmt.Println("All workers done")
+}
+```
+
+> **Advanced Question**: How would you handle a scenario where a goroutine might get stuck waiting for a long-running operation to complete?  
+**Answer**: Use a **`context.WithTimeout`** or **`context.WithCancel`** to cancel a goroutine if the operation takes too long.
+
+---
+
+### 2. **Memory Management & Escape Analysis**
+
+Go automatically manages memory using **garbage collection**, but understanding **escape analysis** helps optimize performance by controlling heap vs. stack allocations.
+
+- **Escape Analysis** determines whether a variable can be allocated on the stack or if it needs to "escape" to the heap.
+- Stack allocations are faster, and heap allocations require garbage collection, so minimizing heap allocations can improve performance.
+
+#### **Heap vs Stack Example**:
+```go
+package main
+
+import "fmt"
+
+func escapeToHeap() *int {
+	x := 42
+	return &x // x escapes to the heap because its address is returned
+}
+
+func stackOnly() int {
+	y := 42
+	return y // y stays on the stack
+}
+
+func main() {
+	fmt.Println(*escapeToHeap()) // Allocated on heap
+	fmt.Println(stackOnly())     // Allocated on stack
+}
+```
+
+> **Advanced Question**: How do you check if a variable escapes to the heap?  
+**Answer**: Use the `go build -gcflags="-m"` command to see where escape analysis moves variables to the heap.
+
+---
+
+### 3. **Channel Buffering and Synchronization Patterns**
+
+#### **Buffered vs Unbuffered Channels**
+- **Buffered Channels** allow sending values without blocking until the buffer is full.
+- **Unbuffered Channels** block until the message is received.
+
+#### **Best Practices for Channel Buffering**:
+- **Buffered Channels** are ideal when you have multiple producers and consumers, and you don’t want producers to be blocked waiting for consumers.
+- **Unbuffered Channels** should be used when you want strict synchronization between sender and receiver.
+
+**Example: Using Buffered Channels**
+```go
+package main
+
+import "fmt"
+
+func main() {
+	ch := make(chan int, 2) // Buffered channel with capacity of 2
+
+	ch <- 1 // Doesn't block because buffer is empty
+	ch <- 2 // Doesn't block because buffer has space
+	fmt.Println(<-ch) // Reads 1
+	fmt.Println(<-ch) // Reads 2
+}
+```
+
+> **Advanced Question**: What happens if you try to send to a full buffered channel?  
+**Answer**: The goroutine will block until space is available in the buffer.
+
+---
+
+### 4. **Select Statement**
+
+The `select` statement allows a goroutine to wait on multiple channel operations, enabling **non-blocking communication** and **timeout handling**.
+
+**Example: Using `select` for Timeouts**
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	ch := make(chan int)
+
+	go func() {
+		time.Sleep(2 * time.Second)
+		ch <- 1
+	}()
+
+	select {
+	case val := <-ch:
+		fmt.Println("Received:", val)
+	case <-time.After(1 * time.Second):
+		fmt.Println("Timeout")
+	}
+}
+```
+
+> **Advanced Question**: What happens if multiple cases in a `select` block are ready?  
+**Answer**: Go will randomly choose one of the ready cases to proceed.
+
+---
+
+### 5. **Error Handling Best Practices**
+
+Go's idiomatic error handling is based on returning errors rather than throwing exceptions.
+
+#### **Best Practices for Error Handling**:
+- **Wrap errors** with additional context using `fmt.Errorf` or third-party libraries like `pkg/errors`.
+- Handle errors immediately and **propagate them upwards** if needed.
+
+**Example: Wrapping Errors**
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+func divide(a, b int) (int, error) {
+	if b == 0 {
+		return 0, fmt.Errorf("division error: %w", errors.New("division by zero"))
+	}
+	return a / b, nil
+}
+
+func main() {
+	result, err := divide(4, 0)
+	if err != nil {
+		fmt.Println("Error:", err)
+	} else {
+		fmt.Println("Result:", result)
+	}
+}
+```
+
+> **Advanced Question**: How do you check the root cause of an error wrapped with `fmt.Errorf`?  
+**Answer**: Use `errors.Is` or `errors.Unwrap` to unwrap and inspect errors.
+
+---
+
+### 6. **Context for Cancellation, Timeouts, and Deadlines**
+
+The `context` package is essential for **controlling goroutine lifecycles**, especially in **web servers**, **long-running operations**, and **API requests**.
+
+#### **Context Types**:
+- `context.Background()`: Base context with no deadline or cancellation.
+- `context.WithTimeout()`: Adds a timeout to a context.
+- `context.WithCancel()`: Allows manual cancellation.
+
+**Example: Using `context.WithTimeout`**
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"time"
+)
+
+func doWork(ctx context.Context) {
+	select {
+	case <-time.After(2 * time.Second):
+		fmt.Println("Work done")
+	case <-ctx.Done():
+		fmt.Println("Cancelled:", ctx.Err())
+	}
+}
+
+func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	go doWork(ctx)
+
+	time.Sleep(2 * time.Second)
+}
+```
+
+> **Advanced Question**: Why is it important to always call `cancel()` when using `context.WithCancel` or `context.WithTimeout`?  
+**Answer**: To avoid **resource leaks** by ensuring that context resources are freed once they are no longer needed.
+
+---
+
+### 7. **Advanced `net/http` Features**
+
+#### **Custom HTTP Handlers and Middleware**
+
+Middleware allows you to modify requests and responses, such as logging, authentication, and rate limiting, by wrapping around the core HTTP handlers.
+
+**Example: Logging Middleware**
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"time"
+)
+
+func logger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		fmt.Printf("Request: %s %s took %v\n", r.Method, r.URL.Path, time.Since(start))
+	})
+}
+
+func helloHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Hello, World!")
+}
+
+func main() {
+	http.Handle("/", logger(http.HandlerFunc(helloHandler)))
+	fmt.Println("Server starting on :8080")
+	http.ListenAndServe(":8080", nil)
+}
+```
+
+> **Advanced Question**: How do you handle long-running requests in `net/http` without blocking the server?  
+**Answer**: Use **goroutines** and handle **cancellation** via the **context** passed through `http.Request.Context()`.
+
+---
+
+### 8. **Reflection in Go**
+
+Reflection allows you to inspect the type and value of variables at runtime using the `reflect` package. This is powerful for **building frameworks**, **serialization**, and **dynamic dispatch**.
+
+**Example: Using Reflection to Inspect Types**
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	var x float64 = 3.4
+	fmt.Println("Type:", reflect.TypeOf(x))
+	fmt.Println("Value:", reflect.ValueOf(x))
+}
+```
+
+> **Advanced Question**: When would you use reflection in production code?  
+**Answer**: Reflection should be used sparingly due to performance costs, but it can be useful for **serialization**, **JSON marshalling**, and **dynamic routing** in frameworks.
+
+---
+
