@@ -1,9 +1,9 @@
 # Go Interview Preparation Notes
-#### [OOP Concepts in Golang]()
+#### [OOP Concepts in Golang](#oop-concepts-in-golang-1)
 #### [Reading Resources](#sources)
 #### [Unique features of Go](#go-unique-features)
-#### [Most Common Interview Topics](#most-common-interview-topics)
-#### [Some advanced Go concepts](#some-advanced-go-concepts)
+#### [Most Common Interview Topics](#most-common-interview-topics-1)
+#### [Some advanced Go concepts](#some-advanced-go-concepts-1)
 ---
 
 ## OOP Concepts in Golang
