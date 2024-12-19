@@ -105,6 +105,7 @@ func main() {
 	fmt.Println(a.Speak()) // "Meow!"
 }
 ```
+if still not clear, checkout this blog about interface why to use them : https://dev.to/githaiga22/how-i-stopped-worrying-and-learned-to-love-go-interfaces-3m7p?ref=dailydev
 ### 4. **Abstraction**:
    Hiding the implementation details from the user and showing only the functionality of the programming to the user.
    - In Go, abstraction is achieved using **interfaces**. 
